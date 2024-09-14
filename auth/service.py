@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 from passlib.context import CryptContext
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
+from auth.schemas import UserCreate
 from .models import User
 
 bcrypt_context = CryptContext(schemes=['bcrypt'], deprecated='auto')
@@ -42,3 +43,28 @@ async def get_current_user(db: Session, token: str = Depends(oauth2_bearer)):
 # get user from user id
 async def get_user_from_user_id(db: Session, user_id: int):
     return db.query(User).filter(User.id == user_id).first()
+
+# create user
+async def create_user(db: Session, user: UserCreate):
+    db_user = User(
+        email=user.email.lower().strip(),
+        username=user.username.casefold().strip(),
+        hashed_password=bcrypt_context.hash(user.password),
+        dob=user.dob or None,
+        bio=user.bio or None,
+        location=user.location or None,
+        profile_pic=user.profile_pic or None,
+        name=user.name or None
+    )
+
+    db.add(db_user)
+    db.commit()
+    db.refresh(db_user)
+
+    return db_user
+
+async def autenticate(db:Session, username:str, password:str):
+    db_user = await existing_user(db, username, '')
+    if not db_user:
+        return False
+    
