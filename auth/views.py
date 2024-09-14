@@ -4,8 +4,8 @@ from sqlalchemy.orm import Session
 from fastapi.security import OAuth2PasswordRequestForm
 from datetime import datetime
 from .schemas import UserCreate, UserUpdate, User as UserSchema
-from .service import autenticate, create_access_token, existing_user, create_user as create_user_svc, get_current_user
-from ..database import get_db
+from .service import autenticate, create_access_token, existing_user, create_user as create_user_svc, get_current_user, update_user as update_user_svc
+from database import get_db
 
 router = APIRouter(
     prefix='/auth',
@@ -18,7 +18,7 @@ async def create_user(user: UserCreate, db: Session=Depends(get_db)):
     if db_user:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail='Username or Email already Exist!')
     
-    db_user = create_user_svc(db, user)
+    db_user = await create_user_svc(db, user)
 
     access_token = await create_access_token(username=db_user.username, id=db_user.id)
 
@@ -43,7 +43,15 @@ async def current_user(token: str, db: Session=Depends(get_db)):
     db_user = await get_current_user(db, token)
     if not db_user:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail='Invalid token')
-    return await get_current_user(db, token)
+    return db_user
+
+@router.put('/{username}', status_code=status.HTTP_200_OK)
+async def update_user(username: str, token: str, user_update: UserUpdate, db: Session=Depends(get_db)):
+    db_user = await get_current_user(token=token, db=db)
+    if not db_user.username != username:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail='Unauthorized!!!')
+    await update_user_svc(db, db_user, user_update)
+
 
 
 

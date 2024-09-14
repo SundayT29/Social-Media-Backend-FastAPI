@@ -1,7 +1,7 @@
 from sqlalchemy import Enum, ForeignKey, Integer, String, DateTime, Column, Date
 from datetime import datetime, timedelta
-from ..database import Base
-from enums import Gender
+from database import Base
+from .enums import Gender
 
 class User(Base):
     __tablename__ = 'users'

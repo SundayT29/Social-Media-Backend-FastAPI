@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 from passlib.context import CryptContext
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
-from auth.schemas import UserCreate
+from auth.schemas import UserCreate, UserUpdate
 from .models import User
 
 bcrypt_context = CryptContext(schemes=['bcrypt'], deprecated='auto')
@@ -32,11 +32,11 @@ async def get_current_user(db: Session, token: str = Depends(oauth2_bearer)):
         username: str = payload.get('sub')
         id:int = payload.get('id')
         expires: datetime = payload.get('exp')
-        if datetime(expires) < datetime.utcnow():
+        if datetime.fromtimestamp(expires) < datetime.utcnow():
             return None
         if username is None or id is None:
             return None
-        return db.query(User).filter(User.id == id).filter()
+        return db.query(User).filter(User.id == id).filter().first()
     except JWTError:
         return None
 
@@ -67,4 +67,16 @@ async def autenticate(db:Session, username:str, password:str):
     db_user = await existing_user(db, username, '')
     if not db_user:
         return False
-    
+    if not bcrypt_context.verify(password, db_user.hashed_password):
+        return False
+    return db_user
+
+async def update_user(db: Session, db_user: User, user_update: UserUpdate):
+    db_user.bio = user_update.bio
+    db_user.name = user_update.name
+    db_user.dob = user_update.dob
+    db_user.gender = user_update.gender
+    db_user.location = user_update.location
+    db_user.profile_pic = user_update.profile_pic
+
+    db.commit()

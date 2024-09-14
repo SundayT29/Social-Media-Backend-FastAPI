@@ -1,7 +1,7 @@
 from typing import Optional
 from pydantic import BaseModel
 from datetime import date, datetime
-from enums import Gender
+from .enums import Gender
 
 class UserBase(BaseModel):
     email: str
@@ -29,4 +29,4 @@ class User(UserBase):
     created_dt: datetime
 
     class Config:
-        orm_mode = True
+        from_attributes = True
